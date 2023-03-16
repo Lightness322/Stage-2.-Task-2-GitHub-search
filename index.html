@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find repo</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="wrapper">
+        <div class="container">
+            <h1 class="title">Найдите репозиторий GitHub!</h1>
+            <form action="" class="form">
+                <div class="form__title">Поле для ввода</div>
+                <input type="text" class="form__input">
+                <button class="form__button" type="submit">Поиск</button>
+            </form>
+            <div class="results__title">Результаты поиска</div>
+            <div class="results"></div>
+            <img class="results__icon" src="icons/unhappy-result.svg" alt="">
+        </div>
+    </div>
+    </div>
+    <script type="module">
+        import { Octokit, App } from "https://cdn.skypack.dev/octokit";
+
+        const octokit = new Octokit()
+
+        let name, description, starsCount, language, createDate, updateDate, htmlUrl
+
+        let form = document.querySelector('form')
+        let results = document.querySelector('.results')
+        let inputObj = document.querySelector('input')
+
+        document.addEventListener('keydown', function (event) {
+            if (event.code === 'Enter') {
+                document.querySelector('.form__button').click()
+            }
+        })
+
+        inputObj.addEventListener('focus', function () {
+            inputObj.placeholder = ''
+        })
+
+        form.addEventListener("submit", async function (event) {
+            event.preventDefault()
+            let qValue = inputObj.value
+
+            if (qValue.trim() === '') {
+                inputObj.value = ''
+                inputObj.placeholder = 'Для поиска необходим как минимум 1 символ!'
+                return null
+            }
+
+            let response = await octokit.request("GET /search/repositories?q={query}", {
+                query: `${qValue} in:name`,
+            });
+
+            document.querySelector('.results').innerHTML = ''
+
+            if (response.data.total_count === 0) {
+                document.querySelector('.results').textContent = "Ничего не найдено"
+                document.querySelector('.results__icon').style.display = "block"
+            } else {
+                document.querySelector('.results').textContent = ""
+                document.querySelector('.results__icon').style.display = "none"
+
+                let responseArray = response.data.items
+
+                for (let i = 0; i < 10; i++) {
+                    if (i >= responseArray.length) {
+                        break
+                    }
+                    name = responseArray[i].full_name
+                    description = responseArray[i].description
+                    starsCount = responseArray[i].stargazers_count
+                    language = responseArray[i].language
+                    createDate = responseArray[i].created_at.slice(0, 10)
+                    updateDate = responseArray[i].updated_at.slice(0, 10)
+                    htmlUrl = responseArray[i].html_url
+
+                    results.insertAdjacentHTML('afterbegin', `<div class="results__item item">
+                    <div class="item-name"><a target="_blank" href="${htmlUrl}">${name}</a></div>
+                    <div class="item-description">${description}</div>
+                    <div class="item__desc-row">
+                        <div class="item__stars-icon">
+                            <img class="item__stars-image" src="icons/star-outline-svgrepo-com.svg" alt="">
+                        </div>
+                        <div class="item__stars">${starsCount}</div>
+                        <div class="item__language">Language: ${language}</div>
+                        <div class="item__created">Created: ${createDate}</div>
+                        <div class="item__updated">Updated: ${updateDate}</div>
+                    </div>
+`)
+                }
+            }
+        })
+
+    </script>
+</body>
+
+</html>
